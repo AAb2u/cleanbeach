@@ -1,5 +1,5 @@
 import React from 'react';
-import { ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -8,9 +8,8 @@ import { RootStackParamList } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Button } from '../components/Button';
-import { AppImages } from '../constants/images';
 import { BADGES } from '../constants/labels';
-import { FontSize, Spacing, BorderRadius } from '../constants/theme';
+import { FontSize, Spacing, BorderRadius, Gradients } from '../constants/theme';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -18,18 +17,24 @@ export function ProfileScreen() {
   const navigation = useNavigation<Nav>();
   const { profile, logout } = useAuth();
   const { colors, isDark, toggleTheme, mode } = useTheme();
+  const headerGradient = isDark ? Gradients.dark.primary : Gradients.light.primary;
+
+  const initials = (profile?.displayName ?? 'U')
+    .split(' ')
+    .map((w) => w.charAt(0))
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
 
   return (
     <ScrollView style={{ backgroundColor: colors.background }} showsVerticalScrollIndicator={false}>
-      <ImageBackground source={AppImages.homeCleanup} style={styles.header} resizeMode="cover">
-        <LinearGradient colors={['rgba(2, 19, 30, 0.18)', 'rgba(2, 19, 30, 0.76)']} style={styles.headerOverlay}>
-          <View style={styles.avatar}>
-            <Ionicons name="person" size={40} color={colors.primary} />
-          </View>
-          <Text style={styles.name}>{profile?.displayName ?? 'Utilisateur'}</Text>
-          <Text style={styles.email}>{profile?.email}</Text>
-        </LinearGradient>
-      </ImageBackground>
+      <LinearGradient colors={headerGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
+        <View style={styles.avatar}>
+          <Text style={[styles.avatarText, { color: colors.primary }]}>{initials}</Text>
+        </View>
+        <Text style={styles.name}>{profile?.displayName ?? 'Utilisateur'}</Text>
+        <Text style={styles.email}>{profile?.email}</Text>
+      </LinearGradient>
 
       <View style={styles.stats}>
         <View style={[styles.statBox, { backgroundColor: colors.surface }]}>
@@ -67,9 +72,9 @@ export function ProfileScreen() {
           </Text>
         </TouchableOpacity>
         {profile?.isAdmin && (
-          <Button title="Tableau de bord admin" onPress={() => navigation.navigate('Admin')} style={{ marginTop: Spacing.md }} />
+          <Button title="Tableau de bord admin" onPress={() => navigation.navigate('Admin')} icon="shield-checkmark" style={{ marginTop: Spacing.md }} />
         )}
-        <Button title="Se deconnecter" onPress={logout} variant="danger" style={{ marginTop: Spacing.md }} />
+        <Button title="Se deconnecter" onPress={logout} variant="danger" icon="log-out" style={{ marginTop: Spacing.md }} />
       </View>
       <View style={{ height: Spacing.xxl }} />
     </ScrollView>
@@ -77,11 +82,11 @@ export function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { minHeight: 230 },
-  headerOverlay: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', padding: Spacing.xl },
-  avatar: { width: 82, height: 82, borderRadius: 41, backgroundColor: 'rgba(255, 255, 255, 0.94)', alignItems: 'center', justifyContent: 'center' },
+  header: { alignItems: 'center', paddingTop: Spacing.xl, paddingBottom: Spacing.xl + Spacing.lg, paddingHorizontal: Spacing.lg },
+  avatar: { width: 82, height: 82, borderRadius: 41, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: FontSize.xxl, fontWeight: '800' },
   name: { color: '#fff', fontSize: FontSize.xl, fontWeight: '800', marginTop: Spacing.sm, textAlign: 'center' },
-  email: { color: '#fff', fontSize: FontSize.sm, textAlign: 'center' },
+  email: { color: 'rgba(255,255,255,0.85)', fontSize: FontSize.sm, textAlign: 'center', marginTop: 2 },
   stats: { flexDirection: 'row', gap: Spacing.md, padding: Spacing.md, marginTop: -Spacing.lg },
   statBox: { flex: 1, alignItems: 'center', padding: Spacing.md, borderRadius: BorderRadius.lg, elevation: 2 },
   statValue: { fontSize: FontSize.xxl, fontWeight: '800' },

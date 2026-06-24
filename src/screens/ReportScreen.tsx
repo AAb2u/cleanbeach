@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
@@ -15,10 +14,15 @@ import { uploadReportImages } from '../services/photoUploadService';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { LoadingScreen } from '../components/LoadingScreen';
-import { AppImages } from '../constants/images';
 import { SEVERITY_LABELS } from '../constants/labels';
 import { getSeverityColor } from '../utils/helpers';
 import { BorderRadius, FontSize, Spacing } from '../constants/theme';
+
+const SEVERITY_HINTS: Record<PollutionSeverity, string> = {
+  low: 'Quelques déchets isolés',
+  medium: 'Pollution visible et étendue',
+  high: 'Site fortement pollué, urgent',
+};
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Report'>;
 const MAX_REPORT_IMAGES = 3;
@@ -212,58 +216,90 @@ export function ReportScreen({ route, navigation }: Props) {
 
   if (initialLoading) return <LoadingScreen />;
 
+  const hasLocation = Boolean(location);
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-      <ImageBackground source={AppImages.reportKit} style={styles.hero} imageStyle={styles.heroImage} resizeMode="cover">
-        <LinearGradient colors={['rgba(2, 19, 30, 0.10)', 'rgba(2, 19, 30, 0.74)']} style={styles.heroOverlay}>
-          <Text style={styles.heroTitle}>{isEditing ? 'Modifier le signalement' : 'Nouveau signalement'}</Text>
-          <Text style={styles.heroText}>
-            {isEditing ? 'Mettez a jour les infos et les photos de votre signalement.' : 'Ajoutez les infos essentielles pour aider la communaute a agir vite.'}
-          </Text>
-        </LinearGradient>
-      </ImageBackground>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>INFORMATIONS</Text>
+      <Input label="Titre" value={title} onChangeText={setTitle} placeholder="Ex: Dechets plastiques sur la plage" />
+      <Input
+        label="Description"
+        value={description}
+        onChangeText={setDescription}
+        placeholder="Decrivez la situation..."
+        multiline
+        numberOfLines={4}
+        style={{ minHeight: 110, textAlignVertical: 'top' }}
+      />
 
-      <View style={[styles.infoBox, { backgroundColor: colors.primary + '14', borderColor: colors.primary + '70' }]}>
-        <Ionicons name="information-circle" size={22} color={colors.primary} />
-        <Text style={[styles.infoText, { color: colors.text }]}>
-          Decrivez la pollution, ajoutez une photo si possible, puis indiquez votre position GPS.
-        </Text>
+      <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>NIVEAU DE POLLUTION</Text>
+      <View style={styles.severityRow}>
+        {(['low', 'medium', 'high'] as PollutionSeverity[]).map((s) => {
+          const c = getSeverityColor(s, isDark);
+          const active = severity === s;
+          return (
+            <TouchableOpacity
+              key={s}
+              onPress={() => setSeverity(s)}
+              activeOpacity={0.85}
+              style={[
+                styles.severityBtn,
+                { borderColor: active ? c : colors.border, backgroundColor: active ? c + '1F' : colors.surface },
+              ]}
+            >
+              <View style={[styles.severityDot, { backgroundColor: c }]} />
+              <Text style={{ color: active ? c : colors.text, fontWeight: '700', fontSize: FontSize.sm }}>
+                {SEVERITY_LABELS[s]}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
+      <Text style={[styles.hint, { color: colors.textSecondary }]}>{SEVERITY_HINTS[severity]}</Text>
 
-      <View style={[styles.photoPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <View style={styles.photoHeader}>
-          <View>
-            <Text style={[styles.photoTitle, { color: colors.text }]}>Ajouter des photos</Text>
-            <Text style={[styles.photoSubtitle, { color: colors.textSecondary }]}>Camera ou galerie, jusqu'a {MAX_REPORT_IMAGES} photos.</Text>
-          </View>
-          <Text style={[styles.photoCount, { color: colors.textSecondary }]}>
-            {totalImageCount}/{MAX_REPORT_IMAGES}
+      <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>LOCALISATION</Text>
+      <TouchableOpacity
+        onPress={getLocation}
+        activeOpacity={0.85}
+        style={[styles.locationCard, { backgroundColor: colors.surface, borderColor: hasLocation ? colors.secondary : colors.border }]}
+      >
+        <View style={[styles.locationIcon, { backgroundColor: (hasLocation ? colors.secondary : colors.primary) + '1A' }]}>
+          <Ionicons name={hasLocation ? 'checkmark-circle' : 'location'} size={22} color={hasLocation ? colors.secondary : colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.locationTitle, { color: colors.text }]} numberOfLines={1}>
+            {hasLocation ? location!.name : 'Obtenir ma position GPS'}
+          </Text>
+          <Text style={[styles.locationSub, { color: colors.textSecondary }]}>
+            {hasLocation ? 'Appuyez pour actualiser' : 'Requis pour valider le signalement'}
           </Text>
         </View>
-        <View style={styles.photoActions}>
-          <TouchableOpacity
-            style={[
-              styles.photoAction,
-              { borderColor: colors.primary, backgroundColor: colors.primary + '12', opacity: totalImageCount >= MAX_REPORT_IMAGES ? 0.55 : 1 },
-            ]}
-            onPress={takePhoto}
-            disabled={totalImageCount >= MAX_REPORT_IMAGES}
-          >
-            <Ionicons name="camera" size={22} color={colors.primary} />
-            <Text style={[styles.photoActionText, { color: colors.text }]}>Camera</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.photoAction,
-              { borderColor: colors.primary, backgroundColor: colors.primary + '12', opacity: totalImageCount >= MAX_REPORT_IMAGES ? 0.55 : 1 },
-            ]}
-            onPress={pickImages}
-            disabled={totalImageCount >= MAX_REPORT_IMAGES}
-          >
-            <Ionicons name="images" size={22} color={colors.primary} />
-            <Text style={[styles.photoActionText, { color: colors.text }]}>Galerie</Text>
-          </TouchableOpacity>
-        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+      </TouchableOpacity>
+
+      <View style={styles.photoLabelRow}>
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginBottom: 0 }]}>PHOTOS (OPTIONNEL)</Text>
+        <Text style={[styles.photoCount, { color: colors.textSecondary }]}>{totalImageCount}/{MAX_REPORT_IMAGES}</Text>
+      </View>
+      <View style={styles.photoActions}>
+        <TouchableOpacity
+          style={[styles.photoAction, { borderColor: colors.border, backgroundColor: colors.surface, opacity: totalImageCount >= MAX_REPORT_IMAGES ? 0.5 : 1 }]}
+          onPress={takePhoto}
+          disabled={totalImageCount >= MAX_REPORT_IMAGES}
+        >
+          <Ionicons name="camera-outline" size={20} color={colors.primary} />
+          <Text style={[styles.photoActionText, { color: colors.text }]}>Camera</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.photoAction, { borderColor: colors.border, backgroundColor: colors.surface, opacity: totalImageCount >= MAX_REPORT_IMAGES ? 0.5 : 1 }]}
+          onPress={pickImages}
+          disabled={totalImageCount >= MAX_REPORT_IMAGES}
+        >
+          <Ionicons name="images-outline" size={20} color={colors.primary} />
+          <Text style={[styles.photoActionText, { color: colors.text }]}>Galerie</Text>
+        </TouchableOpacity>
+      </View>
+      {totalImageCount > 0 && (
         <View style={styles.photoRow}>
           {existingImageUrls.map((uri) => (
             <View key={uri} style={styles.photoPreviewWrap}>
@@ -281,84 +317,38 @@ export function ReportScreen({ route, navigation }: Props) {
               </TouchableOpacity>
             </View>
           ))}
-          {totalImageCount === 0 && (
-            <View style={[styles.photoEmpty, { borderColor: colors.border, backgroundColor: colors.background }]}>
-              <Ionicons name="image-outline" size={28} color={colors.primary} />
-              <Text style={[styles.photoEmptyText, { color: colors.textSecondary }]}>
-                Appuyez sur Camera ou Galerie
-              </Text>
-            </View>
-          )}
         </View>
-      </View>
-
-      <Input label="Titre" value={title} onChangeText={setTitle} placeholder="Ex: Dechets plastiques sur la plage" />
-      <Input
-        label="Description"
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Decrivez la situation..."
-        multiline
-        numberOfLines={4}
-        style={{ minHeight: 100, textAlignVertical: 'top' }}
-      />
-
-      <Text style={[styles.label, { color: colors.text }]}>Niveau de pollution</Text>
-      <View style={styles.severityRow}>
-        {(['low', 'medium', 'high'] as PollutionSeverity[]).map((s) => (
-          <TouchableOpacity
-            key={s}
-            onPress={() => setSeverity(s)}
-            style={[
-              styles.severityBtn,
-              {
-                borderColor: getSeverityColor(s, isDark),
-                backgroundColor: severity === s ? getSeverityColor(s, isDark) + '30' : colors.surface,
-              },
-            ]}
-          >
-            <Text style={{ color: getSeverityColor(s, isDark), fontWeight: '700', fontSize: FontSize.sm }}>
-              {SEVERITY_LABELS[s]}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      )}
 
       <Button
-        title={location ? location.name : 'Obtenir ma position GPS'}
-        onPress={getLocation}
-        variant="outline"
-        style={{ marginBottom: Spacing.md }}
+        title={isEditing ? 'Enregistrer les modifications' : 'Envoyer le signalement'}
+        onPress={handleSubmit}
+        loading={loading}
+        icon={isEditing ? 'save' : 'send'}
+        style={{ marginTop: Spacing.lg }}
       />
-      <Button title={isEditing ? 'Enregistrer les modifications' : 'Envoyer le signalement'} onPress={handleSubmit} loading={loading} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: Spacing.md, paddingBottom: Spacing.xl },
-  hero: { minHeight: 168, marginBottom: Spacing.md, overflow: 'hidden', borderRadius: BorderRadius.lg },
-  heroImage: { borderRadius: BorderRadius.lg },
-  heroOverlay: { flex: 1, justifyContent: 'flex-end', padding: Spacing.md },
-  heroTitle: { color: '#fff', fontSize: FontSize.xl, fontWeight: '800' },
-  heroText: { color: '#fff', fontSize: FontSize.sm, marginTop: Spacing.xs, maxWidth: 310 },
-  infoBox: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, padding: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1, marginBottom: Spacing.md },
-  infoText: { flex: 1, fontSize: FontSize.sm, lineHeight: 20 },
-  label: { fontSize: FontSize.sm, fontWeight: '700', marginBottom: Spacing.sm },
-  severityRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg },
-  severityBtn: { flex: 1, paddingVertical: Spacing.sm, borderRadius: BorderRadius.md, borderWidth: 2, alignItems: 'center' },
-  photoPanel: { borderWidth: 1, borderRadius: BorderRadius.lg, padding: Spacing.md, marginBottom: Spacing.md },
-  photoHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Spacing.md },
-  photoTitle: { fontSize: FontSize.lg, fontWeight: '800' },
-  photoSubtitle: { fontSize: FontSize.sm, marginTop: 2 },
+  container: { padding: Spacing.md, paddingBottom: Spacing.xxl },
+  sectionLabel: { fontSize: FontSize.xs, fontWeight: '800', letterSpacing: 0.8, marginBottom: Spacing.sm, marginTop: Spacing.sm },
+  severityRow: { flexDirection: 'row', gap: Spacing.sm },
+  severityBtn: { flex: 1, flexDirection: 'row', gap: 6, paddingVertical: Spacing.sm + 2, borderRadius: BorderRadius.md, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  severityDot: { width: 9, height: 9, borderRadius: 5 },
+  hint: { fontSize: FontSize.xs, marginTop: Spacing.xs, fontStyle: 'italic' },
+  locationCard: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, borderRadius: BorderRadius.md, borderWidth: 1.5 },
+  locationIcon: { width: 42, height: 42, borderRadius: BorderRadius.full, alignItems: 'center', justifyContent: 'center' },
+  locationTitle: { fontSize: FontSize.md, fontWeight: '700' },
+  locationSub: { fontSize: FontSize.xs, marginTop: 2 },
+  photoLabelRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.lg, marginBottom: Spacing.sm },
   photoCount: { fontSize: FontSize.xs, fontWeight: '800' },
-  photoActions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md, marginBottom: Spacing.sm },
-  photoAction: { flex: 1, minHeight: 52, borderWidth: 1, borderRadius: BorderRadius.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
-  photoActionText: { fontSize: FontSize.sm, fontWeight: '800' },
-  photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  photoActions: { flexDirection: 'row', gap: Spacing.sm },
+  photoAction: { flex: 1, minHeight: 50, borderWidth: 1.5, borderRadius: BorderRadius.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.sm },
+  photoActionText: { fontSize: FontSize.sm, fontWeight: '700' },
+  photoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginTop: Spacing.sm },
   photoPreviewWrap: { width: 86, height: 86, borderRadius: BorderRadius.md, overflow: 'hidden' },
   photoPreview: { width: '100%', height: '100%' },
   removePhoto: { position: 'absolute', top: 5, right: 5, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(15, 23, 42, 0.78)', alignItems: 'center', justifyContent: 'center' },
-  photoEmpty: { width: '100%', minHeight: 86, borderWidth: 1, borderStyle: 'dashed', borderRadius: BorderRadius.md, alignItems: 'center', justifyContent: 'center', padding: Spacing.md },
-  photoEmptyText: { fontSize: FontSize.sm, fontWeight: '700', marginTop: Spacing.xs },
 });

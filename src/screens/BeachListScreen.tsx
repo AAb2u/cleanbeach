@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FlatList, ImageBackground, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,7 +8,6 @@ import { useTheme } from '../context/ThemeContext';
 import { subscribeToReports } from '../services/beachService';
 import { BeachCard } from '../components/BeachCard';
 import { EmptyState } from '../components/EmptyState';
-import { AppImages } from '../constants/images';
 import { SEVERITY_LABELS, STATUS_LABELS } from '../constants/labels';
 import { BorderRadius, FontSize, Spacing } from '../constants/theme';
 
@@ -43,13 +41,6 @@ export function BeachListScreen() {
       showsVerticalScrollIndicator={false}
       ListHeaderComponent={
         <View style={styles.header}>
-          <ImageBackground source={AppImages.reportKit} style={styles.banner} imageStyle={styles.bannerImage} resizeMode="cover">
-            <LinearGradient colors={['rgba(2, 19, 30, 0.14)', 'rgba(2, 19, 30, 0.72)']} style={styles.bannerOverlay}>
-              <Text style={styles.bannerTitle}>Explorer les signalements</Text>
-              <Text style={styles.bannerText}>{filtered.length} plage(s) trouvee(s)</Text>
-            </LinearGradient>
-          </ImageBackground>
-
           <View style={[styles.searchBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Ionicons name="search" size={18} color={colors.textSecondary} />
             <TextInput
@@ -59,29 +50,47 @@ export function BeachListScreen() {
               placeholderTextColor={colors.textSecondary}
               style={[styles.searchInput, { color: colors.text }]}
             />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')} hitSlop={8}>
+                <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
           </View>
-          <View style={styles.filters}>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterRow}
+          >
             {(['all', 'low', 'medium', 'high'] as const).map((s) => (
               <FilterChip
                 key={s}
-                label={s === 'all' ? 'Tous' : SEVERITY_LABELS[s]}
+                label={s === 'all' ? 'Toutes gravités' : SEVERITY_LABELS[s]}
                 active={severityFilter === s}
                 onPress={() => setSeverityFilter(s)}
                 colors={colors}
               />
             ))}
-          </View>
-          <View style={styles.filters}>
+          </ScrollView>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterRow}
+          >
             {(['all', 'polluted', 'cleaning', 'cleaned'] as const).map((s) => (
               <FilterChip
                 key={s}
-                label={s === 'all' ? 'Statut' : STATUS_LABELS[s]}
+                label={s === 'all' ? 'Tous statuts' : STATUS_LABELS[s]}
                 active={statusFilter === s}
                 onPress={() => setStatusFilter(s)}
                 colors={colors}
               />
             ))}
-          </View>
+          </ScrollView>
+
+          <Text style={[styles.count, { color: colors.textSecondary }]}>
+            {filtered.length} signalement{filtered.length > 1 ? 's' : ''}
+          </Text>
         </View>
       }
       renderItem={({ item }) => (
@@ -102,10 +111,10 @@ function FilterChip({
       onPress={onPress}
       style={[
         styles.chip,
-        { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary + '20' : colors.surface },
+        { borderColor: active ? colors.primary : colors.border, backgroundColor: active ? colors.primary : colors.surface },
       ]}
     >
-      <Text style={{ color: active ? colors.primary : colors.text, fontSize: FontSize.xs, fontWeight: '600' }}>
+      <Text style={{ color: active ? '#fff' : colors.text, fontSize: FontSize.xs, fontWeight: '600' }}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -115,13 +124,9 @@ function FilterChip({
 const styles = StyleSheet.create({
   list: { padding: Spacing.md, flexGrow: 1 },
   header: { marginBottom: Spacing.sm },
-  banner: { minHeight: 150, marginBottom: Spacing.md, overflow: 'hidden', borderRadius: BorderRadius.lg },
-  bannerImage: { borderRadius: BorderRadius.lg },
-  bannerOverlay: { flex: 1, justifyContent: 'flex-end', padding: Spacing.md },
-  bannerTitle: { color: '#fff', fontSize: FontSize.xl, fontWeight: '800' },
-  bannerText: { color: '#fff', fontSize: FontSize.sm, marginTop: 2 },
   searchBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: BorderRadius.md, paddingHorizontal: Spacing.md, marginBottom: Spacing.sm, gap: Spacing.sm },
-  searchInput: { flex: 1, paddingVertical: Spacing.sm, fontSize: FontSize.md },
-  filters: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginBottom: Spacing.xs },
-  chip: { borderWidth: 1, borderRadius: BorderRadius.full, paddingHorizontal: 10, paddingVertical: 6 },
+  searchInput: { flex: 1, paddingVertical: Spacing.sm + 2, fontSize: FontSize.md },
+  filterRow: { flexDirection: 'row', gap: Spacing.xs, paddingVertical: 2, paddingRight: Spacing.md },
+  chip: { borderWidth: 1, borderRadius: BorderRadius.full, paddingHorizontal: 14, paddingVertical: 7 },
+  count: { fontSize: FontSize.sm, fontWeight: '600', marginTop: Spacing.sm, marginBottom: Spacing.xs },
 });

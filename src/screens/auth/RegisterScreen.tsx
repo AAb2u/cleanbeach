@@ -77,7 +77,7 @@ export function RegisterScreen({ navigation }: Props) {
                 secureTextEntry
                 placeholder="Min. 6 caracteres"
               />
-              <Button title="S'inscrire" onPress={handleRegister} loading={loading} />
+              <Button title="S'inscrire" onPress={handleRegister} loading={loading} icon="person-add" />
               <Button
                 title="Deja un compte ? Se connecter"
                 onPress={() => navigation.goBack()}

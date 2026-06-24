@@ -71,11 +71,12 @@ export function LoginScreen({ navigation }: Props) {
                 secureTextEntry
                 placeholder="Mot de passe"
               />
-              <Button title="Se connecter" onPress={handleLogin} loading={loading} />
+              <Button title="Se connecter" onPress={handleLogin} loading={loading} icon="log-in" />
               <Button
                 title="Creer un compte"
                 onPress={() => navigation.navigate('Register')}
                 variant="outline"
+                icon="person-add"
                 style={styles.secondaryButton}
               />
             </View>

@@ -320,11 +320,12 @@ export function BeachDetailsScreen({ route, navigation }: Props) {
 
           {canManageReport && (
             <View style={styles.ownerActions}>
-              <Button title="Modifier" onPress={handleEditReport} variant="outline" style={styles.ownerAction} />
+              <Button title="Modifier" onPress={handleEditReport} variant="outline" icon="create" style={styles.ownerAction} />
               <Button
                 title="Supprimer"
                 onPress={handleDeleteReport}
                 variant="danger"
+                icon="trash"
                 loading={deleteLoading}
                 disabled={deleteLoading}
                 style={styles.ownerAction}
@@ -450,6 +451,8 @@ export function BeachDetailsScreen({ route, navigation }: Props) {
             <Button
               title={report.status === 'cleaned' ? 'Ajouter une preuve' : 'Marquer nettoyee avec preuve'}
               onPress={handleCleanupProof}
+              variant="secondary"
+              icon="checkmark-circle"
               loading={cleanupLoading}
               disabled={cleanupLoading}
             />
