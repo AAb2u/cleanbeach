@@ -11,9 +11,13 @@ export interface BeachReport {
   longitude: number;
   locationName: string;
   imageUrls: string[];
+  cleanupImageUrls: string[];
   userId: string;
   userName: string;
   createdAt: Date;
+  cleanedAt?: Date;
+  cleanedBy?: string;
+  cleanedByName?: string;
   likes: number;
   confirmations: number;
   likedBy: string[];
@@ -62,7 +66,7 @@ export interface BeachStats {
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
-  Report: undefined;
+  Report: { reportId?: string } | undefined;
   BeachDetails: { beachId: string };
   Admin: undefined;
 };
@@ -75,6 +79,7 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   Home: undefined;
   Map: undefined;
+  ReportTab: undefined;
   List: undefined;
   Profile: undefined;
 };

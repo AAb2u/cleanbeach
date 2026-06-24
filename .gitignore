@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules/
+.npm/
 
 # Expo
 .expo/
@@ -15,6 +16,9 @@ expo-env.d.ts
 build/
 coverage/
 *.log
+*.apk
+*.aab
+*.ipa
 
 # Native
 .kotlin/
@@ -37,6 +41,7 @@ coverage/
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+pnpm-debug.*
 
 # macOS
 .DS_Store
@@ -63,6 +68,10 @@ serviceAccountKey.json
 credentials.json
 eas-credentials.json
 *.asc
+
+# IDE / editor local files
+.idea/
+.vscode/
 
 # local agent/tool state
 .codex/

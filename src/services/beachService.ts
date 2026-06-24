@@ -22,24 +22,45 @@ function mapReport(id: string, data: Record<string, unknown>): BeachReport {
     severity: data.severity as PollutionSeverity, status: (data.status as BeachStatus) ?? 'polluted',
     latitude: data.latitude as number, longitude: data.longitude as number,
     locationName: data.locationName as string, imageUrls: (data.imageUrls as string[]) ?? [],
+    cleanupImageUrls: (data.cleanupImageUrls as string[]) ?? [],
     userId: data.userId as string, userName: data.userName as string,
-    createdAt: toDate(data.createdAt), likes: (data.likes as number) ?? 0,
+    createdAt: toDate(data.createdAt), cleanedAt: data.cleanedAt ? toDate(data.cleanedAt) : undefined,
+    cleanedBy: data.cleanedBy as string | undefined, cleanedByName: data.cleanedByName as string | undefined,
+    likes: (data.likes as number) ?? 0,
     confirmations: (data.confirmations as number) ?? 0,
     likedBy: (data.likedBy as string[]) ?? [], confirmedBy: (data.confirmedBy as string[]) ?? [],
   };
 }
 
 export async function createReport(
-  data: Omit<BeachReport, 'id' | 'createdAt' | 'likes' | 'confirmations' | 'likedBy' | 'confirmedBy' | 'status'>,
+  data: Omit<BeachReport, 'id' | 'createdAt' | 'cleanedAt' | 'cleanedBy' | 'cleanedByName' | 'cleanupImageUrls' | 'likes' | 'confirmations' | 'likedBy' | 'confirmedBy' | 'status'>,
 ): Promise<string> {
   const ref = await addDoc(collection(db, REPORTS), {
     ...data, status: 'polluted', likes: 0, confirmations: 0, likedBy: [], confirmedBy: [],
-    imageUrls: [], createdAt: serverTimestamp(),
+    imageUrls: data.imageUrls ?? [], cleanupImageUrls: [], createdAt: serverTimestamp(),
   });
-  await incrementUserStats(data.userId);
-  const report = mapReport(ref.id, { ...data, status: 'polluted', imageUrls: [], likes: 0, confirmations: 0, likedBy: [], confirmedBy: [], createdAt: new Date() });
-  await notifyNearbyUsersNewReport(report);
+
+  try {
+    await incrementUserStats(data.userId);
+  } catch (error) {
+    console.warn('Unable to update user stats after report creation.', error);
+  }
+
+  const report = mapReport(ref.id, { ...data, status: 'polluted', imageUrls: data.imageUrls ?? [], cleanupImageUrls: [], likes: 0, confirmations: 0, likedBy: [], confirmedBy: [], createdAt: new Date() });
+  try {
+    await notifyNearbyUsersNewReport(report);
+  } catch (error) {
+    console.warn('Unable to notify nearby users after report creation.', error);
+  }
+
   return ref.id;
+}
+
+export async function updateReport(
+  reportId: string,
+  data: Pick<BeachReport, 'title' | 'description' | 'severity' | 'latitude' | 'longitude' | 'locationName' | 'imageUrls'>,
+): Promise<void> {
+  await updateDoc(doc(db, REPORTS, reportId), data);
 }
 
 export async function getReport(id: string): Promise<BeachReport | null> {
@@ -61,10 +82,34 @@ export function subscribeToReports(callback: (reports: BeachReport[]) => void): 
   });
 }
 
-export async function updateReportStatus(reportId: string, status: BeachStatus): Promise<void> {
-  await updateDoc(doc(db, REPORTS, reportId), { status });
+interface StatusUpdateOptions {
+  proofImageUrls?: string[];
+  userId?: string;
+  userName?: string;
+}
+
+export async function updateReportStatus(reportId: string, status: BeachStatus, options: StatusUpdateOptions = {}): Promise<void> {
+  const updateData: Record<string, unknown> = { status };
+
+  if (status === 'cleaned') {
+    updateData.cleanedAt = serverTimestamp();
+
+    if (options.userId) updateData.cleanedBy = options.userId;
+    if (options.userName) updateData.cleanedByName = options.userName;
+    if (options.proofImageUrls?.length) {
+      updateData.cleanupImageUrls = arrayUnion(...options.proofImageUrls);
+    }
+  }
+
+  await updateDoc(doc(db, REPORTS, reportId), updateData);
   const report = await getReport(reportId);
-  if (report) await notifyNearbyUsersStatusChange(report, status);
+  if (report) {
+    try {
+      await notifyNearbyUsersStatusChange(report, status);
+    } catch (error) {
+      console.warn('Unable to notify users after report status change.', error);
+    }
+  }
 }
 
 export async function deleteReport(reportId: string): Promise<void> {

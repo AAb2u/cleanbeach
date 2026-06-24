@@ -28,7 +28,14 @@ export function AppNavigator() {
       {user ? (
         <>
           <Stack.Screen name="Main" component={MainTabNavigator} options={{ headerShown: false }} />
-          <Stack.Screen name="Report" component={ReportScreen} options={{ title: 'Nouveau signalement', presentation: 'modal' }} />
+          <Stack.Screen
+            name="Report"
+            component={ReportScreen}
+            options={({ route }) => ({
+              title: route.params?.reportId ? 'Modifier signalement' : 'Nouveau signalement',
+              presentation: 'modal',
+            })}
+          />
           <Stack.Screen name="BeachDetails" component={BeachDetailsScreen} options={{ title: 'Détails' }} />
           <Stack.Screen name="Admin" component={AdminDashboardScreen} options={{ title: 'Administration' }} />
         </>
