@@ -1,25 +1,58 @@
 {
   "expo": {
     "name": "CleanBeach",
-    "slug": "CleanBeach",
+    "slug": "cleanbeach",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "scheme": "cleanbeach",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0EA5E9"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cleanbeach.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "CleanBeach utilise votre position pour localiser les plages et les signalements.",
+        "NSCameraUsageDescription": "CleanBeach utilise la caméra pour photographier la pollution sur les plages.",
+        "NSPhotoLibraryUsageDescription": "CleanBeach accède à vos photos pour joindre des images aux signalements."
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0EA5E9"
       },
-      "predictiveBackGestureEnabled": false
+      "package": "com.cleanbeach.app",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "POST_NOTIFICATIONS"
+      ]
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      "expo-location",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CleanBeach accède à vos photos pour joindre des images aux signalements.",
+          "cameraPermission": "CleanBeach utilise la caméra pour photographier la pollution."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0EA5E9"
+        }
+      ],
+      "expo-image",
+      "expo-status-bar"
+    ]
   }
 }

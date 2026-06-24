@@ -5,18 +5,30 @@ node_modules/
 
 # Expo
 .expo/
+.expo-shared/
+.expo-web-test/
 dist/
 web-build/
 expo-env.d.ts
+
+# build output
+build/
+coverage/
+*.log
 
 # Native
 .kotlin/
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
+*.cer
+*.provisionprofile
 *.mobileprovision
+/ios
+/android
 
 # Metro
 .metro-health-check*
@@ -30,12 +42,33 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
+# local env files and secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Firebase / Google credentials
+google-services.json
+GoogleService-Info.plist
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebase/
+serviceAccountKey.json
+*service-account*.json
+*firebase-adminsdk*.json
+
+# EAS / local credential exports
+credentials.json
+eas-credentials.json
+*.asc
+
+# local agent/tool state
+.codex/
+.agents/
+.claude/
+.cursor/
 
 # typescript
 *.tsbuildinfo
-
-# generated native folders
-/ios
-/android
